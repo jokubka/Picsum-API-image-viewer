@@ -1,7 +1,15 @@
 const fetchData = async () => {
-  const response = await fetch("https://picsum.photos/v2/list");
-  const image_data = await response.json();
-  return image_data;
+  try {
+    const response = await fetch("https://picsum.photos/v2/list");
+    if (response.ok) {
+      const image_data = await response.json();
+      return image_data;
+    } else {
+      throw Error(response.statusText);
+    }
+  } catch (err) {
+    alert(err);
+  }
 };
 
 const scaleImage = (view_w, view_h, image_w, image_h) => {
@@ -63,31 +71,23 @@ const spinnerHandler = () => {
 };
 
 const showImageHandler = (event, image_data) => {
-  const image_id = event.target.dataset.imageId;
   const image_element = document.querySelector(".enlarged-image__image");
   const author_element = document.querySelector(".image-author");
   const size_element = document.querySelector(".image-size");
-  const image_size = imageOptimizer(image_data, image_id);
   const photo_spinner = document.querySelector(".photo-spinner");
 
-  photo_spinner.classList.add("show");
-  author_element.innerHTML = image_data[image_id].author;
-  size_element.innerHTML = `${image_data[image_id].width} X ${image_data[image_id].height}`;
-  image_element.innerHTML = `<img src="https://picsum.photos/id/${image_data[image_id].id}/${image_size.width}/${image_size.height}" alt="Enlarged Image" class="photo"/>`;
-  eventHandlerGenerator(image_data);
-};
+  if (event.target.dataset.imageId) {
+    const image_id = event.target.dataset.imageId;
+    const image_size = imageOptimizer(image_data, image_id);
 
-const eventHandlerGenerator = image_data => {
-  const image_list = document.querySelectorAll(".preview-section__image");
-  const photo = document.querySelector(".photo");
+    photo_spinner.classList.add("show");
+    author_element.innerHTML = image_data[image_id].author;
+    size_element.innerHTML = `${image_data[image_id].width} X ${image_data[image_id].height}`;
+    image_element.innerHTML = `<img src="https://picsum.photos/id/${image_data[image_id].id}/${image_size.width}/${image_size.height}" alt="Enlarged Image" class="photo"/>`;
 
-  image_list.forEach(item =>
-    item.addEventListener("click", event => {
-      showImageHandler(event, image_data);
-    })
-  );
-
-  photo.addEventListener("load", spinnerHandler);
+    const photo = document.querySelector(".photo");
+    photo.addEventListener("load", spinnerHandler);
+  }
 };
 
 const loadFirstImage = image_data => {
@@ -99,6 +99,9 @@ const loadFirstImage = image_data => {
   author_element.innerHTML = image_data[0].author;
   size_element.innerHTML = `${image_data[0].width} X ${image_data[0].height}`;
   image_element.innerHTML = `<img src="https://picsum.photos/id/${image_data[0].id}/${image_size.width}/${image_size.height}" alt="Enlarged Image" class="photo" />`;
+
+  const photo = document.querySelector(".photo");
+  photo.addEventListener("load", spinnerHandler);
 };
 
 const generateHtml = image_data => {
@@ -118,13 +121,15 @@ const generateHtml = image_data => {
 };
 
 const loadPreview = async () => {
-  const preview_Section = document.querySelector(".sidebar__preview-section");
+  const preview_section = document.querySelector(".sidebar__preview-section");
   const image_data = await fetchData();
   const html_output = generateHtml(image_data);
 
-  preview_Section.innerHTML = html_output;
+  preview_section.innerHTML = html_output;
   loadFirstImage(image_data);
-  eventHandlerGenerator(image_data);
+  preview_section.addEventListener("click", event => {
+    showImageHandler(event, image_data);
+  });
 };
 
 loadPreview();
